@@ -1,0 +1,36 @@
+name: Test CodeQL on Clojure
+on: 
+  workflow_dispatch:
+
+jobs:
+  scan-code:
+    runs-on: ubuntu-latest
+    steps:  
+      - name: Prepare java
+        uses: actions/setup-java@v4
+        with:
+            distribution: 'zulu'
+            java-version: '21'
+
+      - name: Checkout this repo
+        uses: actions/checkout@v4
+        with:
+          path: main
+
+      - name: Checkout CAS
+        uses: actions/checkout@v4
+        with: 
+          repository: sc00terUL/CAS
+          ref: main
+          path: CAS
+
+      - name: Run clj-holmes on repo
+        run: |
+          java -jar CAS/lib/clj-holmes.jar fetch-rules
+          java -jar CAS/lib/clj-holmes.jar scan -p main/src -t sarif -o ${{github.workspace}}/clj-holmes-results.sarif
+
+      - name: Upload analysis results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+            sarif_file: ${{github.workspace}}/clj-holmes-results.sarif
+            wait-for-processing: true
